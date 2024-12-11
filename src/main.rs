@@ -51,26 +51,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // GET /
     let hello_world = warp::path::end()
+      .and(warp::get())
       .map(|| "Hello, World at root!");
 
     // GET /hi
     let hi = warp::path("hi")
+      .and(warp::get())
       .map(|| "Hello, World!");
+
+    // POST /echo
+    let echo = warp::path("echo")
+      .and(warp::post())
+      .and(warp::body::json())
+      .map(|body: serde_json::Value| warp::reply::json(&body));
 
     // GET /hello/warp => 200 OK with body "Hello, warp!"
     let hello = warp::path!("hello" / String)
+      .and(warp::get())
       .map(|name| format!("Hello, {}!", name));
 
     // GET /dir => map to directory "./"
     let file = warp::path("dir")
+      .and(warp::get())
       .and(warp::fs::dir("./"));
 
-    let routes = warp::get().and(
-        hello_world
-          .or(hi)
-          .or(hello)
-          .or(file)
-    );
+    let routes = hello_world
+      .or(hi)
+      .or(hello)
+      .or(file)
+      .or(echo);
 
     let non_tls_server = warp::serve(routes.clone().with(warp::trace::request()))
       .run(([0, 0, 0, 0], 3030));
